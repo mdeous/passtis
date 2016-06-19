@@ -2,6 +2,7 @@
 
 import json
 import os
+import random
 import sys
 from argparse import ArgumentParser
 from getpass import getpass
@@ -11,6 +12,31 @@ import gnupg
 import pyperclip
 
 __version__ = '0.1'
+
+PASSWORD_CHARSETS = {
+    'lower': 'abcdefghjkmnpqrstuvwxyz',
+    'upper': 'ABCDEFGHJKMNPQRSTUVWXYZ',
+    'digit': '23456789',
+    'special': '&#{}()[]-_^@+=%?'
+}
+PASSWORD_DISTRIBUTION = {
+    'lower': 10,
+    'upper': 10,
+    'digit': 5,
+    'special': 5
+}  # 10 + 10 + 5 + 5 = 30char
+
+
+def generate_password():
+    """
+    Generates a new random password.
+    """
+    password = []
+    for char_type, count in PASSWORD_DISTRIBUTION.items():
+        password.extend(random.choice(PASSWORD_CHARSETS[char_type]) for _ in range(count))
+    for _ in range(5):
+        random.shuffle(password)
+    return ''.join(password)
 
 
 def parse_args():
@@ -37,7 +63,6 @@ def parse_args():
     init_parser = subparsers.add_parser('init', help='initialize the password store')
     init_parser.add_argument('key_id', help='ID of the key used for encrypting the store')
 
-    # TODO: allow to generate a password instead of prompting for one
     add_parser = subparsers.add_parser('add', help='add a new entry')
     add_parser.add_argument('name', help='entry name')
     add_parser.add_argument(
@@ -59,6 +84,11 @@ def parse_args():
         '-g', '--group',
         help='group the entry belongs to',
         default='default'
+    )
+    add_parser.add_argument(
+        '--generate',
+        help='generate random password',
+        action='store_true'
     )
 
     del_parser = subparsers.add_parser('del', help='delete an entry')
@@ -188,15 +218,24 @@ def store_add(args):
         'uri': args.uri,
         'comment': args.comment
     }
-    password1 = getpass('Password: ')
-    password2 = getpass('Confirm password: ')
-    if password1 != password2:
-        print("Passwords don't match!")
-        sys.exit(1)
-    data['password'] = password1
+    if args.generate:
+        password = generate_password()
+    else:
+        password = getpass('Password: ')
+        password2 = getpass('Confirm password: ')
+        if password != password2:
+            print("Passwords don't match!")
+            sys.exit(1)
+    data['password'] = password
     jsoned = json.dumps(data)
     gpg.encrypt(jsoned, [key_id], armor=True, output=output_file)
     os.chmod(output_file, 0o600)
+    if args.generate:
+        pyperclip.copy(password)
+        print('password copied to clipboard (will be cleared in 30s)')
+        daemonize()
+        sleep(30)
+        pyperclip.copy('')
 
 
 def store_del(args):
