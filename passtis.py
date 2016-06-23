@@ -39,6 +39,16 @@ def generate_password():
     return ''.join(password)
 
 
+def key_is_valid(gpg, key_id):
+    """
+    Checks if specified key is present and is sufficiently trusted (i.e. ultimate trust).
+    """
+    for key in gpg.list_keys():
+        if (key['keyid'][8:] == key_id) and (key['trust'] == 'u'):
+            return True
+    return False
+
+
 def parse_args():
     """
     Handles command-line arguments parsing.
@@ -187,10 +197,13 @@ def store_init(args):
     """
     Initializes Passtis store.
     """
-    # TODO: check if key with specified ID exists and is sufficiently trusted
     if os.path.exists(args.dir):
         print('Directory already exists: {}'.format(args.dir))
         sys.exit(73)
+    gpg = gnupg.GPG(verbose=args.verbose)
+    if not key_is_valid(gpg, args.key_id):
+        print('Key is unknown or not sufficiently trusted')
+        sys.exit(1)
     key_path = os.path.join(args.dir, '.key_id')
     os.mkdir(args.dir, 0o700)
     with open(key_path, 'w') as ofile:
