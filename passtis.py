@@ -34,8 +34,7 @@ def generate_password():
     password = []
     for char_type, count in PASSWORD_DISTRIBUTION.items():
         password.extend(random.choice(PASSWORD_CHARSETS[char_type]) for _ in range(count))
-    for _ in range(5):
-        random.shuffle(password)
+    random.shuffle(password)
     return ''.join(password)
 
 
@@ -138,6 +137,7 @@ def parse_args():
         help='do not output anything',
         action='store_true'
     )
+    # TODO:allow to edit entries
 
     return parser.parse_args()
 
