@@ -234,11 +234,13 @@ def store_add(args):
     if args.generate:
         password = generate_password()
     else:
-        password = getpass('Password: ')
-        password2 = getpass('Confirm password: ')
-        if password != password2:
-            print("Passwords don't match!")
-            sys.exit(1)
+        while True:
+            password = getpass('Password: ')
+            password2 = getpass('Confirm password: ')
+            if password == password2:
+                break
+            else:
+                print("Passwords don't match!")
     data['password'] = password
     jsoned = json.dumps(data)
     gpg.encrypt(jsoned, [key_id], armor=True, output=output_file)
