@@ -205,7 +205,7 @@ def store_init(args):
     if not key_is_valid(gpg, args.key_id):
         print('Key is unknown or not sufficiently trusted')
         sys.exit(1)
-    key_path = os.path.join(args.dir, '.key_id')
+    key_path = os.path.join(args.dir, '.key-id')
     os.mkdir(args.dir, 0o700)
     with open(key_path, 'w') as ofile:
         ofile.write(args.key_id)
