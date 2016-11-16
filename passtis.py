@@ -271,17 +271,29 @@ def store_list(args):
     """
     Lists stored groups and entries.
     """
-    # TODO: pretty tree-like display
     check_store_dir(args.dir)
-    print('\n===== {} =====\n'.format(args.dir))
-    for folder in os.listdir(args.dir):
+    print(args.dir)
+    folders = [
+        f for f in sorted(os.listdir(args.dir))
+        if os.path.isdir(os.path.join(args.dir, f))
+        and (f in args.groups if args.groups else True)
+    ]
+    for folder_idx, folder in enumerate(folders):
         if os.path.isdir(os.path.join(args.dir, folder)):
-            if args.groups and folder not in args.groups:
-                continue
-            print('----- {} -----'.format(folder))
-            for entry in os.listdir(os.path.join(args.dir, folder)):
-                print('* {}'.format(entry))
-            print('')
+            print('{}── {}'.format(
+                '└' if (folder_idx + 1 == len(folders)) else '├',
+                folder
+            ))
+            entries = [
+                e for e in sorted(os.listdir(os.path.join(args.dir, folder)))
+                if os.path.isfile(os.path.join(args.dir, folder, e))
+            ]
+            for entry_idx, entry in enumerate(entries):
+                print('{}   {}── {}'.format(
+                    ' ' if (folder_idx + 1 == len(folders)) else '│',
+                    '└' if (entry_idx + 1 == len(entries)) else '├',
+                    entry
+                ))
 
 
 def store_get(args):
