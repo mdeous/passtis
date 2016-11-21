@@ -27,6 +27,11 @@ PASSWORD_DISTRIBUTION = {
     'special': 5
 }  # 10 + 10 + 5 + 5 = 30char
 
+COLOR_BLUE = '\033[01;34m'
+COLOR_GREEN = '\033[22;32m'
+COLOR_RED = '\033[22;31m'
+COLOR_RESET = '\033[0;0m'
+
 
 def generate_password():
     """
@@ -210,7 +215,7 @@ def store_init(args):
     os.mkdir(args.dir, 0o700)
     with open(key_path, 'w') as ofile:
         ofile.write(args.key_id)
-    print('New store created: {}'.format(args.dir))
+    print('New store created: {}{}{}'.format(COLOR_GREEN, args.dir, COLOR_RESET))
 
 
 def store_add(args):
@@ -224,7 +229,7 @@ def store_add(args):
         os.mkdir(output_dir, 0o700)
     output_file = os.path.join(output_dir, args.name)
     if os.path.exists(output_file):
-        print('Entry already exists: {}/{}'.format(args.group, args.name))
+        print('{}Entry already exists: {}/{}{}'.format(COLOR_RED, args.group, args.name, COLOR_RESET))
         sys.exit(73)
 
     gpg = gnupg.GPG(verbose=args.verbose)
@@ -242,14 +247,14 @@ def store_add(args):
             if password == password2:
                 break
             else:
-                print("Passwords don't match!")
+                print("{}Passwords don't match!{}".format(COLOR_RED, COLOR_RESET))
     data['password'] = password
     jsoned = json.dumps(data)
     gpg.encrypt(jsoned, [key_id], armor=True, output=output_file)
     os.chmod(output_file, 0o600)
     if args.generate:
         pyperclip.copy(password)
-        print('password copied to clipboard (will be cleared in 30s)')
+        print('new password copied to clipboard (will be cleared in 30s)')
         daemonize()
         sleep(30)
         pyperclip.copy('')
@@ -262,10 +267,10 @@ def store_del(args):
     check_store_dir(args.dir)
     entry_path = os.path.join(args.dir, args.group, args.name)
     if not os.path.isfile(entry_path):
-        print('No such entry: {}/{}'.format(args.group, args.name))
+        print('{}No such entry: {}/{}{}'.format(COLOR_RED, args.group, args.name, COLOR_RESET))
         sys.exit(66)
     os.unlink(entry_path)
-    print('Entry removed: {}/{}'.format(args.group, args.name))
+    print('Entry removed: {}{}/{}{}'.format(COLOR_GREEN, args.group, args.name, COLOR_RESET))
 
 
 def store_list(args):
@@ -273,7 +278,11 @@ def store_list(args):
     Lists stored groups and entries.
     """
     check_store_dir(args.dir)
-    print('Password Store')
+    print('{}[{}]{}'.format(
+        COLOR_GREEN,
+        args.dir if args.verbose else 'Password Store',
+        COLOR_RESET
+    ))
     folders = [
         f for f in sorted(os.listdir(args.dir))
         if os.path.isdir(os.path.join(args.dir, f))
@@ -281,18 +290,20 @@ def store_list(args):
     ]
     for folder_idx, folder in enumerate(folders):
         if os.path.isdir(os.path.join(args.dir, folder)):
-            print('{}── {}'.format(
-                '└' if (folder_idx + 1 == len(folders)) else '├',
-                folder
+            print('{}{}──{} {}{}{}'.format(
+                COLOR_GREEN, '└' if (folder_idx + 1 == len(folders)) else '├', COLOR_RESET,
+                COLOR_BLUE, folder, COLOR_RESET
             ))
             entries = [
                 e for e in sorted(os.listdir(os.path.join(args.dir, folder)))
                 if os.path.isfile(os.path.join(args.dir, folder, e))
             ]
             for entry_idx, entry in enumerate(entries):
-                print('{}   {}── {}'.format(
+                print('{}{}   {}──{} {}'.format(
+                    COLOR_GREEN,
                     ' ' if (folder_idx + 1 == len(folders)) else '│',
                     '└' if (entry_idx + 1 == len(entries)) else '├',
+                    COLOR_RESET,
                     entry
                 ))
 
@@ -304,7 +315,7 @@ def store_get(args):
     check_store_dir(args.dir)
     entry_path = os.path.join(args.dir, args.group, args.name)
     if not os.path.isfile(entry_path):
-        print('No such entry: {}/{}'.format(args.group, args.name))
+        print('{}No such entry: {}/{}{}'.format(COLOR_RED, args.group, args.name, COLOR_RESET))
         sys.exit(66)
 
     gpg = gnupg.GPG(verbose=args.verbose)
@@ -312,13 +323,20 @@ def store_get(args):
         raw = gpg.decrypt_file(ifile).data
         data = json.loads(raw)
     if not args.silent:
-        print('{0} {1}/{2} {0}'.format('-' * 10, args.group, args.name))
+        print('{green}{line} {blue}{group}/{name} {green}{line}{reset}'.format(
+            green=COLOR_GREEN,
+            blue=COLOR_BLUE,
+            line='-' * 10,
+            group=args.group,
+            name=args.name,
+            reset=COLOR_RESET
+        ))
         for key in ('URI', 'Username', 'Comment'):
             if key.lower() != 'password':
-                print('{:9}: {}'.format(key, data[key.lower()]))
+                print('{}{:9}:{} {}'.format(COLOR_GREEN, key, COLOR_RESET, data[key.lower()]))
         if args.echo:
             print('Password : {}'.format(data['password']))
-        print('-' * (23 + len(args.group + args.name)))
+        print(COLOR_GREEN + '-' * (23 + len(args.group + args.name)) + COLOR_RESET)
     pyperclip.copy(data['password'])
     if not args.silent and not args.echo:
         print('password copied to clipboard (will be cleared in 30s)')
