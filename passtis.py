@@ -117,8 +117,9 @@ def parse_args():
     list_parser = subparsers.add_parser('list', help='list store entries')
     list_parser.add_argument(
         '-G', '--groups',
-        help='display only entries from GROUPS',
-        nargs='+'
+        help='only display entries from given groups',
+        nargs='+',
+        metavar='GROUP'
     )
 
     get_parser = subparsers.add_parser('get', help='fetch an entry from the store')
@@ -272,7 +273,7 @@ def store_list(args):
     Lists stored groups and entries.
     """
     check_store_dir(args.dir)
-    print(args.dir)
+    print('Password Store')
     folders = [
         f for f in sorted(os.listdir(args.dir))
         if os.path.isdir(os.path.join(args.dir, f))
@@ -316,7 +317,7 @@ def store_get(args):
             if key.lower() != 'password':
                 print('{:9}: {}'.format(key, data[key.lower()]))
         if args.echo:
-            print('Password: {}'.format(data['password']))
+            print('Password : {}'.format(data['password']))
         print('-' * (23 + len(args.group + args.name)))
     pyperclip.copy(data['password'])
     if not args.silent and not args.echo:
