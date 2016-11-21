@@ -28,7 +28,7 @@ from time import sleep
 import gnupg
 import pyperclip
 
-__version__ = '0.1'
+__version__ = '0.2'
 
 PASSWORD_CHARSETS = {
     'lower': 'abcdefghjkmnpqrstuvwxyz',
