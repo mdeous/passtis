@@ -70,6 +70,57 @@ def key_is_valid(gpg, key_id):
     return False
 
 
+def get_key_id(path):
+    """
+    Gets key ID for the store located at specified location.
+    """
+    key_path = os.path.join(path, '.key-id')
+    if not os.path.isfile(key_path):
+        print('{}Key ID file not found: {}{}'.format(COLOR_RED, key_path, COLOR_RESET))
+        sys.exit(66)
+    with open(key_path) as ifile:
+        data = ifile.read().strip()
+    return data
+
+
+def check_store_dir(path):
+    """
+    Checks if specified store location exists and has a .key-id file.
+    """
+    if not os.path.exists(path):
+        print('{}Store directory does not exist{}'.format(COLOR_RED, COLOR_RESET))
+        sys.exit(66)
+    key_path = os.path.join(path, '.key-id')
+    if not os.path.exists(key_path):
+        print('{}No key ID found: {}{}'.format(COLOR_RED, key_path, COLOR_RESET))
+        sys.exit(66)
+
+
+def daemonize():
+    """
+    Do UNIX double-fork magic to daemonize current process.
+    Shamelessly taken from https://github.com/serverdensity/python-daemon
+    """
+    try:
+        pid = os.fork()
+        if pid > 0:
+            # exit from first parent
+            sys.exit(0)
+    except OSError as err:
+        print('{}Unable to daemonize: {} ({}){}'.format(COLOR_RED, err.strerror, err.errno, COLOR_RESET))
+        sys.exit(1)
+    os.setsid()
+
+    try:
+        pid = os.fork()
+        if pid > 0:
+            # exit from second parent
+            sys.exit(0)
+    except OSError as err:
+        print('{}Unable to daemonize: {} ({}){}'.format(COLOR_RED, err.strerror, err.errno, COLOR_RESET))
+        sys.exit(1)
+
+
 def parse_args():
     """
     Handles command-line arguments parsing.
@@ -165,67 +216,16 @@ def parse_args():
     return parser.parse_args()
 
 
-def get_key_id(path):
-    """
-    Gets key ID for the store located at specified location.
-    """
-    key_path = os.path.join(path, '.key-id')
-    if not os.path.isfile(key_path):
-        print('Key ID file not found: {}'.format(key_path))
-        sys.exit(66)
-    with open(key_path) as ifile:
-        data = ifile.read().strip()
-    return data
-
-
-def check_store_dir(path):
-    """
-    Checks if specified store location exists and has a .key-id file.
-    """
-    if not os.path.exists(path):
-        print('Store directory does not exist')
-        sys.exit(66)
-    key_path = os.path.join(path, '.key-id')
-    if not os.path.exists(key_path):
-        print('No key ID found: {}'.format(key_path))
-        sys.exit(66)
-
-
-def daemonize():
-    """
-    Do UNIX double-fork magic to daemonize current process.
-    Shamelessly taken from https://github.com/serverdensity/python-daemon
-    """
-    try:
-        pid = os.fork()
-        if pid > 0:
-            # exit from first parent
-            sys.exit(0)
-    except OSError as err:
-        print('Fork #1 failed: {} ({})'.format(err.strerror, err.errno))
-        sys.exit(1)
-    os.setsid()
-
-    try:
-        pid = os.fork()
-        if pid > 0:
-            # exit from second parent
-            sys.exit(0)
-    except OSError as err:
-        print('Fork #2 failed: {} ({})'.format(err.strerror, err.errno))
-        sys.exit(1)
-
-
 def store_init(args):
     """
     Initializes Passtis store.
     """
     if os.path.exists(args.dir):
-        print('Directory already exists: {}'.format(args.dir))
+        print('{}Directory already exists: {}{}'.format(COLOR_RED, args.dir, COLOR_RESET))
         sys.exit(73)
     gpg = gnupg.GPG(verbose=args.verbose)
     if not key_is_valid(gpg, args.key_id):
-        print('Key is unknown or not sufficiently trusted')
+        print('{}Key is unknown or not sufficiently trusted{}'.format(COLOR_RED, COLOR_RESET))
         sys.exit(1)
     key_path = os.path.join(args.dir, '.key-id')
     os.mkdir(args.dir, 0o700)
