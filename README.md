@@ -1,6 +1,6 @@
 # Passtis
 
-GnuPG-based command-line password manager, greatly inspired by [pass](https://www.passwordstore.org/).
+GnuPG-based command line password manager, greatly inspired by [pass](https://www.passwordstore.org/).
 
 
 ## Why?
@@ -8,6 +8,36 @@ GnuPG-based command-line password manager, greatly inspired by [pass](https://ww
 Because I liked [pass](https://www.passwordstore.org/) idea of a GnuPG-based password vault, but I
 was frustrated by its very simplistic storage format with which it's impossible to store metadata
 along with passwords in a simple usable way.
+
+
+## Installation
+
+
+### Dependencies
+
+
+* Python >= 2.6
+* python-gnupg
+* pyperclip
+* argparse
+
+
+### Installing manually
+
+Make sure you've got all the dependencies installed, andopy the `passtis.py` script somewhere 
+in your `PATH`.
+
+
+### Installing using `setup.py`
+
+
+    $ sudo python setup.py install
+
+
+### Installing using `pip`
+
+
+TODO
 
 
 ## Usage
