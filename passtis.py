@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-#     Passtis, a GnuPG-based command-line password vault.
+#     Passtis, a GnuPG-based command line password vault.
 #     Copyright (C) 2016  Mathieu Deous
 #
 #     This program is free software: you can redistribute it and/or modify
@@ -23,6 +23,7 @@ import random
 import sys
 from argparse import ArgumentParser
 from getpass import getpass
+from string import lowercase, uppercase, digits, punctuation
 from time import sleep
 
 import gnupg
@@ -31,10 +32,10 @@ import pyperclip
 __version__ = '0.2'
 
 PASSWORD_CHARSETS = {
-    'lower': 'abcdefghjkmnpqrstuvwxyz',
-    'upper': 'ABCDEFGHJKMNPQRSTUVWXYZ',
-    'digit': '23456789',
-    'special': '&#{}()[]-_^@+=%?'
+    'lower': lowercase,
+    'upper': uppercase,
+    'digit': digits,
+    'special': punctuation
 }
 PASSWORD_DISTRIBUTION = {
     'lower': 10,
@@ -96,6 +97,14 @@ def check_store_dir(path):
         sys.exit(66)
 
 
+def check_entry_path(folder, group, name):
+    entry_path = os.path.join(folder, group, name)
+    if not os.path.isfile(entry_path):
+        print('{}No such entry: {}/{}{}'.format(COLOR_RED, group, name, COLOR_RESET))
+        sys.exit(66)
+    return entry_path
+
+
 def daemonize():
     """
     Do UNIX double-fork magic to daemonize current process.
@@ -119,6 +128,31 @@ def daemonize():
     except OSError as err:
         print('{}Unable to daemonize: {} ({}){}'.format(COLOR_RED, err.strerror, err.errno, COLOR_RESET))
         sys.exit(1)
+
+
+def prompt_password():
+    while True:
+        password = getpass('Password: ')
+        password2 = getpass('Confirm password: ')
+        if password == password2:
+            break
+        else:
+            print("{}Passwords don't match!{}".format(COLOR_RED, COLOR_RESET))
+    return password
+
+
+def write_entry_file(data, gpg, key_id, entry_path):
+    jsoned = json.dumps(data)
+    gpg.encrypt(jsoned, [key_id], armor=True, output=entry_path)
+    os.chmod(entry_path, 0o600)
+
+
+def password_to_clipboard(password):
+    pyperclip.copy(password)
+    print('new password copied to clipboard (will be cleared in 30s)')
+    daemonize()
+    sleep(30)
+    pyperclip.copy('')
 
 
 def parse_args():
@@ -211,7 +245,39 @@ def parse_args():
         help='do not output anything',
         action='store_true'
     )
-    # TODO:allow to edit entries
+
+    edit_parser = subparsers.add_parser('edit', help='edit a store entry')
+    edit_parser.add_argument('name', help='entry name')
+    edit_parser.add_argument(
+        '-g', '--group',
+        help='group the entry belongs to',
+        default='default'
+    )
+    edit_parser.add_argument(
+        '-u', '--user',
+        help='new user name',
+        default=''
+    )
+    edit_parser.add_argument(
+        '-U', '--uri',
+        help='new resource URI',
+        default=''
+    )
+    edit_parser.add_argument(
+        '-c', '--comment',
+        help='new additional entry information',
+        default=''
+    )
+    edit_parser.add_argument(
+        '-p', '--password',
+        help='prompt for new password',
+        action='store_true'
+    )
+    edit_parser.add_argument(
+        '--generate',
+        help='generate new password',
+        action='store_true'
+    )
 
     return parser.parse_args()
 
@@ -257,23 +323,11 @@ def store_add(args):
     if args.generate:
         password = generate_password()
     else:
-        while True:
-            password = getpass('Password: ')
-            password2 = getpass('Confirm password: ')
-            if password == password2:
-                break
-            else:
-                print("{}Passwords don't match!{}".format(COLOR_RED, COLOR_RESET))
+        password = prompt_password()
     data['password'] = password
-    jsoned = json.dumps(data)
-    gpg.encrypt(jsoned, [key_id], armor=True, output=output_file)
-    os.chmod(output_file, 0o600)
+    write_entry_file(data, gpg, key_id, output_file)
     if args.generate:
-        pyperclip.copy(password)
-        print('new password copied to clipboard (will be cleared in 30s)')
-        daemonize()
-        sleep(30)
-        pyperclip.copy('')
+        password_to_clipboard(password)
 
 
 def store_del(args):
@@ -281,10 +335,7 @@ def store_del(args):
     Deletes an entry from the store.
     """
     check_store_dir(args.dir)
-    entry_path = os.path.join(args.dir, args.group, args.name)
-    if not os.path.isfile(entry_path):
-        print('{}No such entry: {}/{}{}'.format(COLOR_RED, args.group, args.name, COLOR_RESET))
-        sys.exit(66)
+    entry_path = check_entry_path(args.dir, args.group, args.name)
     os.unlink(entry_path)
     print('Entry removed: {}{}/{}{}'.format(COLOR_GREEN, args.group, args.name, COLOR_RESET))
 
@@ -329,10 +380,7 @@ def store_get(args):
     Reads an entry from the store.
     """
     check_store_dir(args.dir)
-    entry_path = os.path.join(args.dir, args.group, args.name)
-    if not os.path.isfile(entry_path):
-        print('{}No such entry: {}/{}{}'.format(COLOR_RED, args.group, args.name, COLOR_RESET))
-        sys.exit(66)
+    entry_path = check_entry_path(args.dir, args.group, args.name)
 
     gpg = gnupg.GPG(verbose=args.verbose)
     with open(entry_path) as ifile:
@@ -362,13 +410,47 @@ def store_get(args):
     pyperclip.copy('')
 
 
+def store_edit(args):
+    """
+    Edits an existing store entry.
+    """
+    if args.password and args.generate:
+        print('--password and --generate are mutually exclusive')
+        sys.exit(64)
+
+    check_store_dir(args.dir)
+    key_id = get_key_id(args.dir)
+    entry_path = check_entry_path(args.dir, args.group, args.name)
+
+    gpg = gnupg.GPG(verbose=args.verbose)
+    with open(entry_path) as ifile:
+        raw = gpg.decrypt_file(ifile).data
+        data = json.loads(raw)
+
+    data['username'] = args.user or data['username']
+    data['uri'] = args.uri or data['uri']
+    data['comment'] = args.comment or data['comment']
+    if args.generate:
+        data['password'] = generate_password()
+    elif args.password:
+        data['password'] = prompt_password()
+
+    write_entry_file(data, gpg, key_id, entry_path)
+    if args.generate:
+        password_to_clipboard(data['password'])
+
+
 def main():
+    """
+    Application's entry-point.
+    """
     commands = {
         'init': store_init,
         'add': store_add,
         'del': store_del,
         'list': store_list,
-        'get': store_get
+        'get': store_get,
+        'edit': store_edit
     }
     args = parse_args()
     commands[args.command](args)
