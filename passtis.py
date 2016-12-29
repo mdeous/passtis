@@ -66,7 +66,8 @@ def key_is_valid(gpg, key_id):
     Checks if specified key is present and is sufficiently trusted (i.e. ultimate trust).
     """
     for key in gpg.list_keys():
-        if (key['keyid'][8:] == key_id) and (key['trust'] == 'u'):
+        kid = key['keyid'][16-len(key_id):]
+        if (kid == key_id) and (key['trust'] == 'u'):
             return True
     return False
 
@@ -282,14 +283,14 @@ def parse_args():
     return parser.parse_args()
 
 
-def store_init(args):
+def store_init(args, gnupghome=None):
     """
     Initializes Passtis store.
     """
     if os.path.exists(args.dir):
         print('{}Directory already exists: {}{}'.format(COLOR_RED, args.dir, COLOR_RESET))
         sys.exit(73)
-    gpg = gnupg.GPG(verbose=args.verbose)
+    gpg = gnupg.GPG(verbose=args.verbose, gnupghome=gnupghome)
     if not key_is_valid(gpg, args.key_id):
         print('{}Key is unknown or not sufficiently trusted{}'.format(COLOR_RED, COLOR_RESET))
         sys.exit(1)
