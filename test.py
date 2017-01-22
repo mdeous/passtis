@@ -2,10 +2,12 @@
 # -*- coding: utf-8 -*-
 
 import os
+import re
 import sys
 from shutil import rmtree
 from tempfile import mkdtemp, mkstemp
 from unittest import TestCase, main
+
 if sys.version_info.major == 3:
     from io import StringIO
 else:
@@ -71,7 +73,6 @@ class MockedArgs(object):
     groups = ['testgroup', 'testgroup2', 'NoSuchGroup']
     echo = True
     silent = False
-    password = False
     verbose = False
 
 
@@ -81,6 +82,10 @@ class PasstisTestCase(TestCase):
     gpg = gnupg.GPG(gnupghome=gpg_home)
     gpg_passwd = 'passtis-test'
     gpg_trust_fd, gpg_trust_path = mkstemp(suffix='-passtis-gpg-trust')
+    passwd_re = re.compile(r'Password : [%s]{%d}' % (
+        re.escape(''.join(passtis.PASSWORD_CHARSETS.values())),
+        sum(passtis.PASSWORD_DISTRIBUTION.values())
+    ))
 
     @classmethod
     def setUpClass(cls):
@@ -107,12 +112,19 @@ class PasstisTestCase(TestCase):
         self.real_stdout = sys.stdout
         sys.stdout = self.stdout
         passtis.store_init(self.args, gnupghome=self.gpg_home)
+        self.stdout.seek(0)
 
     def tearDown(self):
         if os.path.isdir(self.args.dir):
             rmtree(self.args.dir)
         self.stdout.close()
         sys.stdout = self.real_stdout
+
+    def get_output(self):
+        self.stdout.seek(0)
+        data = self.stdout.read()
+        self.stdout.seek(0)
+        return data
 
     def test_01_init(self):
         self.assertTrue(
@@ -130,21 +142,18 @@ class PasstisTestCase(TestCase):
         )
 
     def test_02_add(self):
-        # add to default group
-        passtis.store_add(self.args, gnupghome=self.gpg_home)
-        entry_path = os.path.join(self.args.dir, self.args.group, self.args.name)
-        self.assertTrue(
-            os.path.exists(entry_path),
-            'entry file was not added to the store: %s' % entry_path
-        )
         # add to custom groups
-        for group in self.args.groups:
+        for group in self.args.groups + ['default']:
             self.args.group = group
             passtis.store_add(self.args, gnupghome=self.gpg_home)
             entry_path = os.path.join(self.args.dir, self.args.group, self.args.name)
             self.assertTrue(
                 os.path.exists(entry_path),
                 'entry file was not added to the store: %s' % entry_path
+            )
+            self.assertTrue(
+                self.passwd_re.search(self.get_output()) is not None,
+                'output didn\'t contain generated password'
             )
 
     def test_03_del(self):
@@ -161,16 +170,16 @@ class PasstisTestCase(TestCase):
         )
 
     def test_04_get(self):
-        assert False
+        assert False, 'test not implemented yet'
 
     def test_05_list(self):
-        assert False
+        assert False, 'test not implemented yet'
 
     def test_06_edit(self):
-        assert False
+        assert False, 'test not implemented yet'
 
     def test_07_clipboard(self):
-        assert False
+        assert False, 'test not implemented yet'
 
 
 if __name__ == '__main__':
