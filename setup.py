@@ -4,8 +4,6 @@
 import os
 from setuptools import setup
 
-import passtis
-
 CURDIR = os.path.realpath(os.path.dirname(__file__))
 
 with open(os.path.join(CURDIR, 'README.md')) as ifile:
@@ -20,7 +18,7 @@ with open(os.path.join(CURDIR, 'requirements.txt')) as ifile:
 
 setup(
     name='Passtis',
-    version=passtis.__version__,
+    version='0.2',
     description=' GnuPG-based command line password manager',
     long_description=README,
     author='Mathieu D. (MatToufoutu)',
@@ -28,7 +26,7 @@ setup(
     url='TBD',
     zip_safe=False,
     license='GPLv3',
-    keywords='pass passwd password password-manager gpg gnupg',
+    keywords='pass passwd password password-manager gpg gnupg password-store',
     install_requires=REQUIREMENTS,
     py_modules=['passtis'],
     entry_points={
@@ -45,5 +43,6 @@ setup(
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-    ]
+    ],
+    test_suite='nose2.collector.collector'
 )
