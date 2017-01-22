@@ -23,17 +23,15 @@ import random
 import sys
 from argparse import ArgumentParser
 from getpass import getpass
-from string import lowercase, uppercase, digits, punctuation
+from string import ascii_lowercase, ascii_uppercase, digits, punctuation
 from time import sleep
 
 import gnupg
 import pyperclip
 
-__version__ = '0.2'
-
 PASSWORD_CHARSETS = {
-    'lower': lowercase,
-    'upper': uppercase,
+    'lower': ascii_lowercase,
+    'upper': ascii_uppercase,
     'digit': digits,
     'special': punctuation
 }
@@ -301,7 +299,7 @@ def store_init(args, gnupghome=None):
     print('New store created: {}{}{}'.format(COLOR_GREEN, args.dir, COLOR_RESET))
 
 
-def store_add(args):
+def store_add(args, gnupghome=None):
     """
     Adds a new entry to the store.
     """
@@ -315,7 +313,7 @@ def store_add(args):
         print('{}Entry already exists: {}/{}{}'.format(COLOR_RED, args.group, args.name, COLOR_RESET))
         sys.exit(73)
 
-    gpg = gnupg.GPG(verbose=args.verbose)
+    gpg = gnupg.GPG(verbose=args.verbose, gnupghome=gnupghome)
     data = {
         'username': args.user,
         'uri': args.uri,
@@ -328,7 +326,10 @@ def store_add(args):
     data['password'] = password
     write_entry_file(data, gpg, key_id, output_file)
     if args.generate:
-        password_to_clipboard(password)
+        if args.echo:
+            print('Password : {}'.format(data['password']))
+        else:
+            password_to_clipboard(password)
 
 
 def store_del(args):
@@ -376,14 +377,14 @@ def store_list(args):
                 ))
 
 
-def store_get(args):
+def store_get(args, gnupghome=None):
     """
     Reads an entry from the store.
     """
     check_store_dir(args.dir)
     entry_path = check_entry_path(args.dir, args.group, args.name)
 
-    gpg = gnupg.GPG(verbose=args.verbose)
+    gpg = gnupg.GPG(verbose=args.verbose, gnupghome=gnupghome)
     with open(entry_path) as ifile:
         raw = gpg.decrypt_file(ifile).data
         data = json.loads(raw)
@@ -411,7 +412,7 @@ def store_get(args):
     pyperclip.copy('')
 
 
-def store_edit(args):
+def store_edit(args, gnupghome=None):
     """
     Edits an existing store entry.
     """
@@ -423,7 +424,7 @@ def store_edit(args):
     key_id = get_key_id(args.dir)
     entry_path = check_entry_path(args.dir, args.group, args.name)
 
-    gpg = gnupg.GPG(verbose=args.verbose)
+    gpg = gnupg.GPG(verbose=args.verbose, gnupghome=gnupghome)
     with open(entry_path) as ifile:
         raw = gpg.decrypt_file(ifile).data
         data = json.loads(raw)
