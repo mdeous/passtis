@@ -160,7 +160,7 @@ def parse_args():
     """
     parser = ArgumentParser(
         description='Passtis - Command line password manager.',
-        version=__version__
+        version='0.2'
     )
     parser.add_argument(
         '-d', '--dir',
@@ -377,7 +377,7 @@ def store_list(args):
                 ))
 
 
-def store_get(args, gnupghome=None):
+def store_get(args, gnupghome=None, testing=False):
     """
     Reads an entry from the store.
     """
@@ -407,9 +407,10 @@ def store_get(args, gnupghome=None):
     if not args.silent and not args.echo:
         print('password copied to clipboard (will be cleared in 30s)')
 
-    daemonize()
-    sleep(30)
-    pyperclip.copy('')
+    if not testing:
+        daemonize()
+        sleep(30)
+        pyperclip.copy('')
 
 
 def store_edit(args, gnupghome=None):
