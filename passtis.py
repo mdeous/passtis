@@ -49,6 +49,8 @@ COLOR_GREEN = '\033[22;32m'
 COLOR_RED = '\033[22;31m'
 COLOR_RESET = '\033[0;0m'
 
+TESTING = False
+
 
 def generate_password():
     """
@@ -151,9 +153,10 @@ def write_entry_file(data, gpg, key_id, entry_path):
 def password_to_clipboard(password):
     pyperclip.copy(password)
     print('new password copied to clipboard (will be cleared in 30s)')
-    daemonize()
-    sleep(30)
-    pyperclip.copy('')
+    if not TESTING:
+        daemonize()
+        sleep(30)
+        pyperclip.copy('')
 
 
 def parse_args():
@@ -384,7 +387,7 @@ def store_list(args):
                 ))
 
 
-def store_get(args, gnupghome=None, testing=False):
+def store_get(args, gnupghome=None):
     """
     Reads an entry from the store.
     """
@@ -413,11 +416,7 @@ def store_get(args, gnupghome=None, testing=False):
     if not args.echo:
         if not args.silent:
             print('password copied to clipboard (will be cleared in 30s)')
-        pyperclip.copy(data['password'])
-        if not testing:
-            daemonize()
-            sleep(30)
-            pyperclip.copy('')
+        password_to_clipboard(data['password'])
 
 
 def store_edit(args, gnupghome=None):
