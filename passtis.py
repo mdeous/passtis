@@ -207,7 +207,7 @@ def parse_args():
     )
     add_parser.add_argument(
         '--generate',
-        help='generate random password',
+        help='generate random password instead of prompting for one',
         action='store_true'
     )
 
@@ -273,18 +273,13 @@ def parse_args():
         default=''
     )
     edit_parser.add_argument(
-        '-p', '--password',
-        help='prompt for new password',
-        action='store_true'
-    )
-    edit_parser.add_argument(
         '-e', '--echo',
         help='display password instead of copying it to the clipboard',
         action='store_true'
     )
     edit_parser.add_argument(
         '--generate',
-        help='generate new password',
+        help='generate random password instead of prompting for one',
         action='store_true'
     )
 
@@ -427,10 +422,6 @@ def store_edit(args, gnupghome=None):
     """
     Edits an existing store entry.
     """
-    if args.password and args.generate:
-        print('--password and --generate are mutually exclusive')
-        sys.exit(64)
-
     check_store_dir(args.dir)
     key_id = get_key_id(args.dir)
     entry_path = check_entry_path(args.dir, args.group, args.name)
@@ -445,7 +436,7 @@ def store_edit(args, gnupghome=None):
     data['comment'] = args.comment or data['comment']
     if args.generate:
         data['password'] = generate_password()
-    elif args.password:
+    else:
         data['password'] = prompt_password()
 
     write_entry_file(data, gpg, key_id, entry_path)
