@@ -17,6 +17,8 @@
 #     You should have received a copy of the GNU General Public License
 #     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+# TODO: check if clipboard is available
+
 import json
 import os
 import random
@@ -408,14 +410,14 @@ def store_get(args, gnupghome=None, testing=False):
         if args.echo:
             print('Password : {}'.format(data['password']))
         print(COLOR_GREEN + '-' * (23 + len(args.group + args.name)) + COLOR_RESET)
-    pyperclip.copy(data['password'])
-    if not args.silent and not args.echo:
-        print('password copied to clipboard (will be cleared in 30s)')
-
-    if not testing:
-        daemonize()
-        sleep(30)
-        pyperclip.copy('')
+    if not args.echo:
+        if not args.silent:
+            print('password copied to clipboard (will be cleared in 30s)')
+        pyperclip.copy(data['password'])
+        if not testing:
+            daemonize()
+            sleep(30)
+            pyperclip.copy('')
 
 
 def store_edit(args, gnupghome=None):
