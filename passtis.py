@@ -201,6 +201,11 @@ def parse_args():
         default='default'
     )
     add_parser.add_argument(
+        '-e', '--echo',
+        help='display password instead of copying it to the clipboard',
+        action='store_true'
+    )
+    add_parser.add_argument(
         '--generate',
         help='generate random password',
         action='store_true'
@@ -270,6 +275,11 @@ def parse_args():
     edit_parser.add_argument(
         '-p', '--password',
         help='prompt for new password',
+        action='store_true'
+    )
+    edit_parser.add_argument(
+        '-e', '--echo',
+        help='display password instead of copying it to the clipboard',
         action='store_true'
     )
     edit_parser.add_argument(
@@ -440,7 +450,10 @@ def store_edit(args, gnupghome=None):
 
     write_entry_file(data, gpg, key_id, entry_path)
     if args.generate:
-        password_to_clipboard(data['password'])
+        if args.echo:
+            print('Password : {}'.format(data['password']))
+        else:
+            password_to_clipboard(data['password'])
 
 
 def main():
