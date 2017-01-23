@@ -10,6 +10,14 @@ was frustrated by its very simplistic storage format with which it's impossible 
 along with passwords in a simple usable way.
 
 
+## ToDo
+
+* check if clipboard is available
+* find a workaround for when clipboard is not available
+* support arbitrary fields
+* support configuration file (for example, to store custom password specs)
+
+
 ## Installation
 
 
