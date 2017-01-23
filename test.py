@@ -82,7 +82,7 @@ class PasstisTestCase(TestCase):
     gpg = gnupg.GPG(gnupghome=gpg_home)
     gpg_passwd = 'passtis-test'
     gpg_trust_fd, gpg_trust_path = mkstemp(suffix='-passtis-gpg-trust')
-    passwd_re = re.compile(r'Password : ([%s]{%d})' % (
+    passwd_re = re.compile(r'Password : ([{}]{{{:d}}})'.format(
         re.escape(''.join(passtis.PASSWORD_CHARSETS.values())),
         sum(passtis.PASSWORD_DISTRIBUTION.values())
     ))
@@ -97,7 +97,7 @@ class PasstisTestCase(TestCase):
         trust_file = os.fdopen(cls.gpg_trust_fd, 'w')
         trust_file.write(GPG_KEY_TRUST)
         trust_file.close()
-        os.system('gpg --homedir=%s --import-ownertrust < %s &>/dev/null' % (cls.gpg_home, cls.gpg_trust_path))
+        os.system('gpg --homedir={} --import-ownertrust < {} &>/dev/null'.format(cls.gpg_home, cls.gpg_trust_path))
 
     @classmethod
     def tearDownClass(cls):
@@ -135,7 +135,7 @@ class PasstisTestCase(TestCase):
         password2 = pyperclip.paste()
         self.assertEqual(
             password, password2,
-            'returned password is not the expected one: %s != %s' % (password, password2)
+            'returned password is not the expected one: {} != {}'.format(password, password2)
         )
         # check if content is properly cleaned when needed
         pyperclip.copy('')
@@ -148,12 +148,12 @@ class PasstisTestCase(TestCase):
     def test_01_init(self):
         self.assertTrue(
             os.path.isdir(self.args.dir),
-            'store folder was not created: %s' % self.args.dir
+            'store folder was not created: {}'.format(self.args.dir)
         )
         key_id_path = os.path.join(self.args.dir, '.key-id')
         self.assertTrue(
             os.path.exists(key_id_path),
-            'key id was not added to the store: %s' % key_id_path
+            'key id was not added to the store: {}'.format(key_id_path)
         )
         self.assertEqual(
             passtis.get_key_id(self.args.dir), self.args.key_id,
@@ -167,7 +167,7 @@ class PasstisTestCase(TestCase):
             entry_path = os.path.join(self.args.dir, self.args.group, self.args.name)
             self.assertTrue(
                 os.path.exists(entry_path),
-                'entry file was not added to the store: %s' % entry_path
+                'entry file was not added to the store: {}'.format(entry_path)
             )
             self.assertTrue(
                 self.passwd_re.search(self.get_output()) is not None,
@@ -179,12 +179,12 @@ class PasstisTestCase(TestCase):
         entry_path = os.path.join(self.args.dir, self.args.group, self.args.name)
         self.assertTrue(
             os.path.exists(entry_path),
-            'entry file was not added to the store: %s' % entry_path
+            'entry file was not added to the store: {}'.format(entry_path)
         )
         passtis.store_del(self.args)
         self.assertFalse(
             os.path.exists(entry_path),
-            'test entry file was not deleted from the store: %s' % entry_path
+            'test entry file was not deleted from the store: {}'.format(entry_path)
         )
 
     def test_04_get(self):
@@ -197,7 +197,7 @@ class PasstisTestCase(TestCase):
         password2 = self.passwd_re.search(out).group(1)
         self.assertEqual(
             password, password2,
-            'returned password is not the expected one: %s != %s' % (password, password2)
+            'returned password is not the expected one: {} != {}'.format(password, password2)
         )
         # with echo disabled
         self.args.echo = False
@@ -218,7 +218,7 @@ class PasstisTestCase(TestCase):
         for group in self.args.groups:
             self.assertTrue(
                 group in out,
-                'inserted group was not present in output: %s' % group
+                'inserted group was not present in output: {}'.format(group)
             )
         self.assertFalse(
             'default' in out,
@@ -229,16 +229,12 @@ class PasstisTestCase(TestCase):
         passtis.store_add(self.args, gnupghome=self.gpg_home)
         out = self.get_output()
         password = self.passwd_re.search(out).group(1)
-        # self.args.groups = None
-        # passtis.store_list(self.args)
-        # out = self.get_output()
-        # sys.stderr.write(out)
         passtis.store_edit(self.args, gnupghome=self.gpg_home)
         out = self.get_output()
         password2 = self.passwd_re.search(out).group(1)
         self.assertNotEqual(
             password, password2,
-            'password was not modified: %s == %s' % (password, password2)
+            'password was not modified: {} == {}'.format(password, password2)
         )
 
 
