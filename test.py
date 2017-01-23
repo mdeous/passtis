@@ -8,7 +8,7 @@ from shutil import rmtree
 from tempfile import mkdtemp, mkstemp
 from unittest import TestCase, main
 
-if sys.version_info.major == 3:
+if sys.version_info[0] == 3:
     from io import StringIO
 else:
     from StringIO import StringIO
