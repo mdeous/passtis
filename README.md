@@ -50,14 +50,14 @@ TODO
 
 ## Usage
 
-1. Initialize the password store
+* Initialize the password store
 
 ```
 $ passtis init 13E22663
 New store created: /home/user/.passtis-store
 ```
 
-2. Add a new entry (password input)
+* Add a new entry (password input)
 
 ```
 $ passtis add -u user -U http://example.com -c 'very password, much secure' example.com
@@ -65,14 +65,14 @@ Password:
 Confirm password:
 ```
 
-2. Add a new entry (generated password)
+* Add a new entry (generated password)
 
 ```
 $ passtis add -u user -U https://github.com github.com --generate
 new password copied to clipboard (will be cleared in 30s)
 ```
 
-2. Add a new entry (specific group)
+* Add a new entry (specific group)
 
 ```
 $ passtis add -u user -U https://wiki.workplace.com -g work wiki.workplace.com
@@ -80,7 +80,7 @@ Password:
 Confirm password:
 ```
 
-3. List entries
+* List entries
 
 ```
 $ passtis list
@@ -98,7 +98,7 @@ $ passtis list
     └── workplace.com
 ```
 
-3. List entries (only specific groups)
+* List entries (only specific groups)
 
 ```
 $ passtis list -G work social
@@ -112,7 +112,7 @@ $ passtis list -G work social
     └── workplace.com
 ```
 
-4. Get an entry's content
+* Get an entry's content
 
 ```
 $ passtis get example.com
@@ -124,7 +124,7 @@ Comment  : very password, much secure
 password copied to clipboard (will be cleared in 30s)
 ```
 
-4. Get an entry's content (specific group)
+* Get an entry's content (specific group)
 
 ```
 $ passtis get -g work wiki.workplace.com
@@ -136,7 +136,7 @@ Comment  :
 password copied to clipboard (will be cleared in 30s)
 ```
 
-4. Get an entry's content (display password)
+* Get an entry's content (display password)
 
 ```
 $ passtis get -e example.com
