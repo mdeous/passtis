@@ -14,6 +14,7 @@ else:
     from StringIO import StringIO
 
 import gnupg
+import pyperclip
 
 import passtis
 
@@ -77,21 +78,21 @@ class MockedArgs(object):
 
 
 class PasstisTestCase(TestCase):
-    args = MockedArgs()
     gpg_home = mkdtemp(suffix='-passtis-gpg')
     gpg = gnupg.GPG(gnupghome=gpg_home)
     gpg_passwd = 'passtis-test'
     gpg_trust_fd, gpg_trust_path = mkstemp(suffix='-passtis-gpg-trust')
-    passwd_re = re.compile(r'Password : [%s]{%d}' % (
+    passwd_re = re.compile(r'Password : ([%s]{%d})' % (
         re.escape(''.join(passtis.PASSWORD_CHARSETS.values())),
         sum(passtis.PASSWORD_DISTRIBUTION.values())
     ))
 
     @classmethod
     def setUpClass(cls):
+        passtis.TESTING = True
         cls.gpg.import_keys(GPG_KEY)
         keys = cls.gpg.list_keys()
-        cls.args.key_id = keys[-1]['keyid']
+        MockedArgs.key_id = keys[-1]['keyid']
         # another ugly hack, as python-gnupg doesn't seem to allow changing a key's trust
         trust_file = os.fdopen(cls.gpg_trust_fd, 'w')
         trust_file.write(GPG_KEY_TRUST)
@@ -106,6 +107,7 @@ class PasstisTestCase(TestCase):
             os.unlink(cls.gpg_trust_path)
 
     def setUp(self):
+        self.args = MockedArgs()
         self.args.dir = mkdtemp(suffix='-passtis')
         rmtree(self.args.dir)
         self.stdout = StringIO()
@@ -126,6 +128,23 @@ class PasstisTestCase(TestCase):
         self.stdout.seek(0)
         return data
 
+    def test_00_clipboard(self):
+        password = 'JustSomeTestPassword'
+        pyperclip.copy(password)
+        # check if clipboard content is good
+        password2 = pyperclip.paste()
+        self.assertEqual(
+            password, password2,
+            'returned password is not the expected one: %s != %s' % (password, password2)
+        )
+        # check if content is properly cleaned when needed
+        pyperclip.copy('')
+        password3 = pyperclip.paste()
+        self.assertNotEqual(
+            password, password3,
+            'pyperclip did not properly clean clipboard content'
+        )
+
     def test_01_init(self):
         self.assertTrue(
             os.path.isdir(self.args.dir),
@@ -142,8 +161,7 @@ class PasstisTestCase(TestCase):
         )
 
     def test_02_add(self):
-        # add to custom groups
-        for group in self.args.groups + ['default']:
+        for group in ['default'] + self.args.groups:
             self.args.group = group
             passtis.store_add(self.args, gnupghome=self.gpg_home)
             entry_path = os.path.join(self.args.dir, self.args.group, self.args.name)
@@ -161,7 +179,7 @@ class PasstisTestCase(TestCase):
         entry_path = os.path.join(self.args.dir, self.args.group, self.args.name)
         self.assertTrue(
             os.path.exists(entry_path),
-            'test entry file was not added to the store: %s' % entry_path
+            'entry file was not added to the store: %s' % entry_path
         )
         passtis.store_del(self.args)
         self.assertFalse(
@@ -170,16 +188,58 @@ class PasstisTestCase(TestCase):
         )
 
     def test_04_get(self):
-        assert False, 'test not implemented yet'
+        passtis.store_add(self.args, gnupghome=self.gpg_home)
+        out = self.get_output()
+        password = self.passwd_re.search(out).group(1)
+        # with echo enabled
+        passtis.store_get(self.args, gnupghome=self.gpg_home)
+        out = self.get_output()
+        password2 = self.passwd_re.search(out).group(1)
+        self.assertEqual(
+            password, password2,
+            'returned password is not the expected one: %s != %s' % (password, password2)
+        )
+        # with echo disabled
+        self.args.echo = False
+        passtis.store_get(self.args, gnupghome=self.gpg_home)
+        out = self.get_output()
+        self.assertTrue(
+            self.passwd_re.search(out) is None,
+            'password was echoed-out while it shouldn\'t have'
+        )
 
     def test_05_list(self):
-        assert False, 'test not implemented yet'
+        for group in ['default'] + self.args.groups:
+            self.args.group = group
+            passtis.store_add(self.args, gnupghome=self.gpg_home)
+        self.get_output()  # clean output buffer
+        passtis.store_list(self.args)
+        out = self.get_output()
+        for group in self.args.groups:
+            self.assertTrue(
+                group in out,
+                'inserted group was not present in output: %s' % group
+            )
+        self.assertFalse(
+            'default' in out,
+            'default group should not appear when filtering groups'
+        )
 
     def test_06_edit(self):
-        assert False, 'test not implemented yet'
-
-    def test_07_clipboard(self):
-        assert False, 'test not implemented yet'
+        passtis.store_add(self.args, gnupghome=self.gpg_home)
+        out = self.get_output()
+        password = self.passwd_re.search(out).group(1)
+        # self.args.groups = None
+        # passtis.store_list(self.args)
+        # out = self.get_output()
+        # sys.stderr.write(out)
+        passtis.store_edit(self.args, gnupghome=self.gpg_home)
+        out = self.get_output()
+        password2 = self.passwd_re.search(out).group(1)
+        self.assertNotEqual(
+            password, password2,
+            'password was not modified: %s == %s' % (password, password2)
+        )
 
 
 if __name__ == '__main__':
