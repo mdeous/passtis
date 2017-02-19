@@ -1,3 +1,5 @@
+[![Join the chat at https://gitter.im/mattoufoutu/passtis](https://badges.gitter.im/mattoufoutu/passtis.svg)](https://gitter.im/mattoufoutu/passtis?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 # Passtis
 
 GnuPG-based command line password manager, greatly inspired by [pass](https://www.passwordstore.org/).
