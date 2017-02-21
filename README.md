@@ -18,13 +18,17 @@ along with passwords in a simple usable way.
 * find a workaround for when clipboard is not available
 * support arbitrary fields
 * support configuration file (for example, to store custom password complexity settings)
+* autocompletion scripts for bash/zsh
+* create helpers for migrating from various password stores
+* allow to encrypt entries with multiple keys
+* allow to set specific keys to subfolders
+* implement TOTP with encrypted key storage [IDEA]
 
 
 ## Installation
 
 
 ### Dependencies
-
 
 * Python >= 2.6
 * python-gnupg
