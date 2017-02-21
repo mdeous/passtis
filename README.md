@@ -17,7 +17,7 @@ along with passwords in a simple usable way.
 * check if clipboard is available
 * find a workaround for when clipboard is not available
 * support arbitrary fields
-* support configuration file (for example, to store custom password specs)
+* support configuration file (for example, to store custom password complexity settings)
 
 
 ## Installation
@@ -34,7 +34,7 @@ along with passwords in a simple usable way.
 
 ### Installing manually
 
-Make sure you've got all the dependencies installed, andopy the `passtis.py` script somewhere 
+Make sure you've got all the dependencies installed, and copy the `passtis.py` script somewhere 
 in your `PATH`.
 
 
